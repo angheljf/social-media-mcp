@@ -12,6 +12,7 @@ import {
 import dotenv from "dotenv";
 import { SocialMediaPost, PostArgs, isValidPostArgs, SocialMediaPlatform, ListPostsArgs, isValidListPostsArgs } from "./types.js";
 import { TwitterApi } from 'twitter-api-v2';
+// import { v4 as uuidv4 } from 'uuid';
 
 
 dotenv.config();
@@ -32,10 +33,14 @@ const twitterClient = new TwitterApi({
     accessSecret: TWITTER_ACCESS_SECRET
 });
 
+// Helper function to sleep for a specified time (in milliseconds)
+function sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 class SocialMediaServer {
     private server: Server;
-    private socialMediaPosts: SocialMediaPost[] = [];
+     private socialMediaPosts: SocialMediaPost[] = [];
     private socialMediaPlatforms: SocialMediaPlatform[] = [
         {
             name: "X",
@@ -120,6 +125,7 @@ class SocialMediaServer {
                         type: "object",
                         properties: {
                             content: { type: "string", description: "Content of the post" },
+                            threadId: { type: "string", description: "ID of the thread to post to" },
                         },
                         required: ["content"],
                     },
@@ -133,10 +139,25 @@ class SocialMediaServer {
                             limit: {
                                 type: "number",
                                 description: "Maximum number of posts to return"
+                            },
+                            threadId: {
+                                type: "string",
+                                description: "ID of the thread to filter by"
                             }
                         }
                     }
-                }
+                },
+               {
+                    name: "create_x_thread",
+                   description: "Create a thread on X (formerly Twitter)",
+                   inputSchema: {
+                       type: "object",
+                       properties: {
+                           content: { type: "string", description: "Content of the first post" }
+                       },
+                       required: ["content"]
+                   }
+               }
             ],
         }));
 
@@ -151,13 +172,33 @@ class SocialMediaServer {
                             "Invalid post arguments"
                         );
                     }
-                    const { content } = request.params.arguments;
+                    const { content, threadId } = request.params.arguments;
                     try {
-                        const tweet = await twitterClient.v2.tweet(content)
+                        let tweet;
+                       if(threadId) {
+                            const lastPostInThread = this.socialMediaPosts.filter(post => post.threadId === threadId).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+                           if(lastPostInThread) {
+                                await sleep(2000)
+                                tweet = await twitterClient.v2.reply(content, lastPostInThread.tweetId ?? "0")
+                           }
+                           else {
+                                await sleep(2000)
+                               tweet = await twitterClient.v2.tweet(content)
+                           }
+
+                       }
+                       else {
+                           await sleep(2000)
+                           tweet = await twitterClient.v2.tweet(content)
+                       }
+
+
                          const newPost: SocialMediaPost = {
                             content,
                             platform: "X",
-                             timestamp: new Date().toISOString()
+                            timestamp: new Date().toISOString(),
+                             threadId: threadId,
+                             tweetId: tweet.data.id
                         };
                         this.socialMediaPosts.push(newPost);
                          return {
@@ -187,17 +228,61 @@ class SocialMediaServer {
                             "Invalid list posts arguments"
                         )
                     }
-                    const { limit } = request.params.arguments;
+                    const { limit, threadId } = request.params.arguments;
                     let filteredPosts = this.socialMediaPosts;
+                     if(threadId) {
+                        filteredPosts = filteredPosts.filter(post => post.threadId === threadId)
+                    }
                     if(limit){
                         filteredPosts = filteredPosts.slice(0, limit);
                     }
+
 
                     return {
                         content: [{
                             type: "text",
                             text: JSON.stringify(filteredPosts, null, 2)
                         }]
+                    }
+                }
+               else if (request.params.name === "create_x_thread") {
+                    if (!isValidPostArgs(request.params.arguments)) {
+                        throw new McpError(
+                            ErrorCode.InvalidParams,
+                            "Invalid post arguments"
+                        );
+                    }
+                    const { content } = request.params.arguments;
+                    try {
+                        await sleep(2000)
+                         const tweet = await twitterClient.v2.tweet(content)
+                        const threadId = tweet.data.id;
+                        const newPost: SocialMediaPost = {
+                            content,
+                            platform: "X",
+                            timestamp: new Date().toISOString(),
+                            threadId: threadId,
+                             tweetId: tweet.data.id
+                        };
+                        this.socialMediaPosts.push(newPost);
+                        return {
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Successfully created X thread: ${content}. Thread ID: ${threadId}`,
+                                },
+                            ],
+                        };
+                    } catch (error: any) {
+                          return {
+                            isError: true,
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Failed to create X thread: ${error.message}`,
+                                },
+                            ],
+                        };
                     }
                 }
                  throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
