@@ -175,53 +175,52 @@ class SocialMediaServer {
                     const { content, threadId } = request.params.arguments;
                     try {
                         let tweet;
-                       if(threadId) {
-                            const lastPostInThread = this.socialMediaPosts.filter(post => post.threadId === threadId).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
-                           if(lastPostInThread) {
+                        if (threadId) {
+                             const lastPostInThread = this.socialMediaPosts.filter(post => post.threadId === threadId).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0]
+                             if(lastPostInThread) {
                                 await sleep(2000)
                                 tweet = await twitterClient.v2.reply(content, lastPostInThread.tweetId ?? "0")
-                           }
-                           else {
+                             }
+                            else {
                                 await sleep(2000)
                                tweet = await twitterClient.v2.tweet(content)
-                           }
-
+                             }
                        }
                        else {
                            await sleep(2000)
                            tweet = await twitterClient.v2.tweet(content)
                        }
-
-
-                         const newPost: SocialMediaPost = {
-                            content,
+                    
+                        const newPost: SocialMediaPost = {
+                           content,
                             platform: "X",
                             timestamp: new Date().toISOString(),
-                             threadId: threadId,
-                             tweetId: tweet.data.id
+                           threadId: threadId,
+                            tweetId: tweet.data.id
                         };
-                        this.socialMediaPosts.push(newPost);
-                         return {
-                            content: [
+                       this.socialMediaPosts.push(newPost);
+                        return {
+                             content: [
                                 {
-                                    type: "text",
-                                    text: `Successfully posted to X: ${content}. Tweet ID: ${tweet.data.id}`,
+                                   type: "text",
+                                  text: `Successfully posted to X: ${content}. Tweet ID: ${tweet.data.id}`,
                                 },
                             ],
                         };
+                        }
+                         catch(error: any) {
+                           return {
+                               isError: true,
+                                content: [
+                                    {
+                                         type: "text",
+                                        text: `Failed to post to X: ${error.message}`,
+                                     },
+                               ],
+                            };
+                      }
                     }
-                    catch(error: any) {
-                         return {
-                            isError: true,
-                            content: [
-                                {
-                                    type: "text",
-                                    text: `Failed to post to X: ${error.message}`,
-                                },
-                            ],
-                        };
-                    }
-                } else if (request.params.name === "list_x_posts") {
+                     else if (request.params.name === "list_x_posts") {
                     if(!isValidListPostsArgs(request.params.arguments)) {
                         throw new McpError(
                             ErrorCode.InvalidParams,
@@ -245,46 +244,47 @@ class SocialMediaServer {
                         }]
                     }
                 }
-               else if (request.params.name === "create_x_thread") {
+                else if (request.params.name === "create_x_thread") {
                     if (!isValidPostArgs(request.params.arguments)) {
-                        throw new McpError(
-                            ErrorCode.InvalidParams,
-                            "Invalid post arguments"
-                        );
+                           throw new McpError(
+                               ErrorCode.InvalidParams,
+                               "Invalid post arguments"
+                            );
                     }
-                    const { content } = request.params.arguments;
-                    try {
-                        await sleep(2000)
-                         const tweet = await twitterClient.v2.tweet(content)
-                        const threadId = tweet.data.id;
-                        const newPost: SocialMediaPost = {
-                            content,
-                            platform: "X",
-                            timestamp: new Date().toISOString(),
-                            threadId: threadId,
-                             tweetId: tweet.data.id
-                        };
-                        this.socialMediaPosts.push(newPost);
-                        return {
-                            content: [
-                                {
-                                    type: "text",
-                                    text: `Successfully created X thread: ${content}. Thread ID: ${threadId}`,
-                                },
-                            ],
-                        };
-                    } catch (error: any) {
-                          return {
-                            isError: true,
-                            content: [
-                                {
-                                    type: "text",
-                                    text: `Failed to create X thread: ${error.message}`,
-                                },
-                            ],
-                        };
-                    }
-                }
+                       const { content } = request.params.arguments;
+                       try {
+                           await sleep(2000)
+                               const tweet = await twitterClient.v2.tweet(content)
+                           const threadId = tweet.data.id;
+                           const newPost: SocialMediaPost = {
+                               content,
+                               platform: "X",
+                               timestamp: new Date().toISOString(),
+                               threadId: threadId,
+                               tweetId: tweet.data.id
+                           };
+                           this.socialMediaPosts.push(newPost);
+                           return {
+                               content: [
+                                   {
+                                       type: "text",
+                                      text: `Successfully created X thread: ${content}. Thread ID: ${threadId}`,
+                                  },
+                               ],
+                          };
+                      } catch (error: any) {
+                           return {
+                               isError: true,
+                               content: [
+                                   {
+                                       type: "text",
+                                       text: `Failed to create X thread: ${error.message}`,
+                                   },
+                               ],
+                          };
+                     }
+               }
+               
                  throw new McpError(ErrorCode.MethodNotFound, `Unknown tool: ${request.params.name}`);
             }
         );
