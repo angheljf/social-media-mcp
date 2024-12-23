@@ -4,6 +4,10 @@ A Model Context Protocol (MCP) server for managing social media posts, currently
 
 ![Example](./img/example.png)
 
+<a href="https://glama.ai/mcp/servers/55bvn41dtb">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/55bvn41dtb/badge" />
+</a>
+
 ## Features
 
 - Post messages to X (Twitter)
