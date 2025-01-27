@@ -1,5 +1,6 @@
 # Social Media Server
 
+[![smithery badge](https://smithery.ai/badge/social-media-server)](https://smithery.ai/server/social-media-server)
 A Model Context Protocol (MCP) server for managing social media posts, currently supporting X (formerly Twitter).
 
 ![Example](./img/example.png)
@@ -27,6 +28,15 @@ A Model Context Protocol (MCP) server for managing social media posts, currently
 
 ## Installation
 
+### Installing via Smithery
+
+To install Social Media Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/social-media-server):
+
+```bash
+npx -y @smithery/cli install social-media-server --client claude
+```
+
+### Manual Installation
 1. Clone the repository
 2. Install dependencies:
 ```sh
@@ -72,4 +82,3 @@ The project uses TypeScript and follows the Model Context Protocol specification
 ## License
 
 This project is licensed under the MIT License
-

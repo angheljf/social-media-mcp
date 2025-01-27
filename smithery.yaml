@@ -1,0 +1,29 @@
+# Smithery configuration file: https://smithery.ai/docs/config#smitheryyaml
+
+startCommand:
+  type: stdio
+  configSchema:
+    # JSON Schema defining the configuration options for the MCP.
+    type: object
+    required:
+      - twitterApiKey
+      - twitterApiSecret
+      - twitterAccessToken
+      - twitterAccessSecret
+    properties:
+      twitterApiKey:
+        type: string
+        description: Twitter API Key
+      twitterApiSecret:
+        type: string
+        description: Twitter API Secret
+      twitterAccessToken:
+        type: string
+        description: Twitter Access Token
+      twitterAccessSecret:
+        type: string
+        description: Twitter Access Secret
+  commandFunction:
+    # A function that produces the CLI command to start the MCP on stdio.
+    |-
+    (config) => ({ command: 'node', args: ['build/index.js'], env: { TWITTER_API_KEY: config.twitterApiKey, TWITTER_API_SECRET: config.twitterApiSecret, TWITTER_ACCESS_TOKEN: config.twitterAccessToken, TWITTER_ACCESS_SECRET: config.twitterAccessSecret } })
